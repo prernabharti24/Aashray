@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ladakh",
+    "name": "Ladakh (High-Altitude Cold Desert)",
+    "region": "Northern Himalayas, India",
+    "altitude_m": 3500,
+    "description": "Sub-zero night temperatures, extreme diurnal swings, high solar irradiance due to thin atmosphere, strong cold winds.",
+    "latitude": 34.15,
+    "design_day": "Winter Peak (January)",
+    "hourly_outdoor_temp": [-12.0, -13.5, -14.2, -14.8, -15.0, -14.5, -13.0, -9.5, -5.0, -1.0, 2.0, 3.5, 4.0, 3.0, 0.5, -2.5, -6.0, -8.5, -9.8, -10.5, -11.0, -11.5, -11.8, -12.0],
+    "hourly_solar_irradiance": [0, 0, 0, 0, 0, 0, 80, 320, 580, 780, 920, 980, 950, 840, 650, 410, 150, 0, 0, 0, 0, 0, 0, 0],
+    "hourly_wind_speed": [3.5, 3.2, 3.0, 2.8, 3.0, 3.5, 4.2, 5.0, 6.2, 7.5, 8.0, 8.5, 8.0, 7.2, 6.5, 5.8, 5.0, 4.5, 4.0, 3.8, 3.6, 3.5, 3.5, 3.5],
+    "ground_temp": -2.0,
+    "recommended_focus": "High thermal mass for night heat retention, heavy roof insulation, double glazed south-facing windows for solar heat trap."
+  },
+  {
+    "id": "dras",
+    "name": "Dras (Extreme Cold / High Altitude)",
+    "region": "Kargil, Ladakh",
+    "altitude_m": 3280,
+    "description": "Second coldest inhabited place on earth. Severe freezing winds and extreme night thermal shock.",
+    "latitude": 34.43,
+    "design_day": "Winter Peak (January)",
+    "hourly_outdoor_temp": [-22.0, -23.5, -24.5, -25.0, -25.2, -24.8, -23.0, -18.5, -14.0, -9.0, -5.5, -3.0, -2.5, -4.0, -7.5, -11.0, -15.0, -18.0, -19.5, -20.5, -21.0, -21.5, -21.8, -22.0],
+    "hourly_solar_irradiance": [0, 0, 0, 0, 0, 0, 50, 280, 520, 710, 850, 900, 870, 760, 580, 350, 100, 0, 0, 0, 0, 0, 0, 0],
+    "hourly_wind_speed": [4.5, 4.2, 4.0, 3.8, 4.0, 4.5, 5.5, 6.8, 8.0, 9.5, 10.0, 10.5, 10.0, 9.0, 8.0, 7.0, 6.0, 5.5, 5.0, 4.8, 4.6, 4.5, 4.5, 4.5],
+    "ground_temp": -6.0,
+    "recommended_focus": "Maximum envelope airtightness, multi-layer earth/straw composite walls, super-insulated roof."
+  },
+  {
+    "id": "jaisalmer",
+    "name": "Jaisalmer (Hot & Dry Desert)",
+    "region": "Thar Desert, Rajasthan",
+    "altitude_m": 225,
+    "description": "Intense daytime solar baking, high ambient temperatures, cool desert nights with large diurnal range.",
+    "latitude": 26.91,
+    "design_day": "Summer Peak (May)",
+    "hourly_outdoor_temp": [28.0, 27.0, 26.2, 25.5, 25.0, 25.5, 28.0, 32.0, 36.5, 40.0, 43.0, 45.5, 46.5, 46.0, 44.5, 42.0, 39.0, 36.0, 33.5, 31.8, 30.5, 29.5, 28.8, 28.2],
+    "hourly_solar_irradiance": [0, 0, 0, 0, 0, 0, 120, 380, 650, 850, 980, 1040, 1010, 910, 740, 500, 240, 40, 0, 0, 0, 0, 0, 0],
+    "hourly_wind_speed": [2.5, 2.2, 2.0, 1.8, 2.0, 2.5, 3.0, 3.8, 4.5, 5.2, 5.8, 6.0, 5.8, 5.5, 5.0, 4.5, 4.0, 3.5, 3.0, 2.8, 2.6, 2.5, 2.5, 2.5],
+    "ground_temp": 30.0,
+    "recommended_focus": "Thick sandstone/earth walls for time-lag thermal damping, shaded roof overhangs, minimal west glazed openings."
+  },
+  {
+    "id": "delhi",
+    "name": "Delhi / NCR (Composite Climate)",
+    "region": "Northern Plains",
+    "altitude_m": 216,
+    "description": "Extreme seasons: intensely hot summers, cold winter snaps, high humidity during monsoon.",
+    "latitude": 28.61,
+    "design_day": "Winter / Spring Transition",
+    "hourly_outdoor_temp": [7.0, 6.2, 5.5, 4.8, 4.5, 5.0, 7.5, 11.0, 15.0, 18.5, 21.0, 23.0, 23.8, 23.0, 21.5, 19.0, 16.0, 13.5, 11.5, 10.0, 9.0, 8.2, 7.6, 7.2],
+    "hourly_solar_irradiance": [0, 0, 0, 0, 0, 0, 60, 250, 480, 680, 820, 880, 850, 740, 560, 340, 110, 0, 0, 0, 0, 0, 0, 0],
+    "hourly_wind_speed": [1.5, 1.2, 1.0, 1.0, 1.2, 1.5, 2.0, 2.5, 3.0, 3.5, 3.8, 4.0, 3.8, 3.5, 3.0, 2.5, 2.0, 1.8, 1.5, 1.4, 1.3, 1.2, 1.2, 1.2],
+    "ground_temp": 14.0,
+    "recommended_focus": "Balanced insulation and cross-ventilation flexibility with moderate thermal mass."
+  },
+  {
+    "id": "shillong",
+    "name": "Shillong (Cold & Cloudy Mountain)",
+    "region": "Meghalaya, North East",
+    "altitude_m": 1525,
+    "description": "High humidity, overcast skies, cool temperatures year-round, damp chill.",
+    "latitude": 25.57,
+    "design_day": "Winter Cloud (December)",
+    "hourly_outdoor_temp": [4.0, 3.5, 3.0, 2.5, 2.2, 2.8, 4.5, 7.0, 9.8, 12.0, 13.5, 14.5, 14.8, 14.0, 12.5, 10.5, 8.5, 7.0, 6.0, 5.2, 4.8, 4.5, 4.2, 4.0],
+    "hourly_solar_irradiance": [0, 0, 0, 0, 0, 0, 40, 180, 340, 460, 540, 580, 560, 490, 380, 220, 70, 0, 0, 0, 0, 0, 0, 0],
+    "hourly_wind_speed": [2.0, 1.8, 1.8, 1.5, 1.8, 2.2, 2.8, 3.5, 4.0, 4.5, 4.8, 5.0, 4.8, 4.2, 3.8, 3.2, 2.8, 2.5, 2.2, 2.0, 2.0, 2.0, 2.0, 2.0],
+    "ground_temp": 8.0,
+    "recommended_focus": "Moisture barrier with local bamboo-timber hybrid walls, insulated sloping roof."
+  }
+]

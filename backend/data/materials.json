@@ -1,0 +1,222 @@
+{
+  "wall_materials": [
+    {
+      "id": "adobe_mud",
+      "name": "Adobe / Sun-Dried Mud Brick (300mm)",
+      "category": "earth",
+      "is_local_earth": true,
+      "description": "Traditional high thermal mass earthen brick with excellent diurnal thermal damping and zero embodied carbon.",
+      "thickness_m": 0.30,
+      "conductivity_w_mk": 0.55,
+      "density_kg_m3": 1700,
+      "specific_heat_j_kgk": 1150,
+      "solar_absorptance": 0.65,
+      "emissivity": 0.90,
+      "u_value_w_m2k": 1.45,
+      "thermal_mass_rating": "High (10-12h lag)"
+    },
+    {
+      "id": "rammed_earth",
+      "name": "Stabilized Rammed Earth (350mm)",
+      "category": "earth",
+      "is_local_earth": true,
+      "description": "Compacted monolithic earth wall offering superb heat retention for cold nights and thermal flywheels.",
+      "thickness_m": 0.35,
+      "conductivity_w_mk": 0.70,
+      "density_kg_m3": 1950,
+      "specific_heat_j_kgk": 1260,
+      "solar_absorptance": 0.70,
+      "emissivity": 0.90,
+      "u_value_w_m2k": 1.60,
+      "thermal_mass_rating": "Very High (12-14h lag)"
+    },
+    {
+      "id": "cseb_blocks",
+      "name": "Compressed Stabilized Earth Block - CSEB (230mm)",
+      "category": "earth",
+      "is_local_earth": true,
+      "description": "Engineered local soil blocks stabilized with 5% lime/cement for high durability and thermal capacitance.",
+      "thickness_m": 0.23,
+      "conductivity_w_mk": 0.85,
+      "density_kg_m3": 1850,
+      "specific_heat_j_kgk": 1000,
+      "solar_absorptance": 0.68,
+      "emissivity": 0.88,
+      "u_value_w_m2k": 2.30,
+      "thermal_mass_rating": "Moderate-High (8-10h lag)"
+    },
+    {
+      "id": "local_stone",
+      "name": "Local Rubble / Granite Masonry (350mm)",
+      "category": "stone",
+      "is_local_earth": true,
+      "description": "Traditional Himalayan / desert stone construction. Extreme thermal mass, high conductivity.",
+      "thickness_m": 0.35,
+      "conductivity_w_mk": 1.80,
+      "density_kg_m3": 2300,
+      "specific_heat_j_kgk": 880,
+      "solar_absorptance": 0.75,
+      "emissivity": 0.92,
+      "u_value_w_m2k": 2.85,
+      "thermal_mass_rating": "High mass, needs insulation in cold"
+    },
+    {
+      "id": "red_brick",
+      "name": "Standard Red Clay Brick (230mm)",
+      "category": "masonry",
+      "is_local_earth": false,
+      "description": "Standard kiln-fired clay brick with mortar plaster.",
+      "thickness_m": 0.23,
+      "conductivity_w_mk": 0.80,
+      "density_kg_m3": 1800,
+      "specific_heat_j_kgk": 840,
+      "solar_absorptance": 0.70,
+      "emissivity": 0.90,
+      "u_value_w_m2k": 2.20,
+      "thermal_mass_rating": "Moderate (6-8h lag)"
+    },
+    {
+      "id": "concrete_block",
+      "name": "Concrete Block Wall (200mm)",
+      "category": "masonry",
+      "is_local_earth": false,
+      "description": "Cast hollow or dense concrete masonry block.",
+      "thickness_m": 0.20,
+      "conductivity_w_mk": 1.30,
+      "density_kg_m3": 2100,
+      "specific_heat_j_kgk": 880,
+      "solar_absorptance": 0.65,
+      "emissivity": 0.90,
+      "u_value_w_m2k": 3.10,
+      "thermal_mass_rating": "Moderate mass, poor insulation"
+    }
+  ],
+  "roof_materials": [
+    {
+      "id": "mud_straw_timber",
+      "name": "Mud-Plastered Timber / Poplar Twig Roof (150mm)",
+      "category": "earth",
+      "is_local_earth": true,
+      "description": "Traditional Ladakhi flat roof composed of local poplar rafters, willow twigs, dry straw, and compacted clay silt.",
+      "thickness_m": 0.15,
+      "conductivity_w_mk": 0.35,
+      "density_kg_m3": 1200,
+      "specific_heat_j_kgk": 1300,
+      "solar_absorptance": 0.60,
+      "emissivity": 0.90,
+      "u_value_w_m2k": 1.60
+    },
+    {
+      "id": "thatch_bamboo",
+      "name": "Thatch & Bamboo Sloped Roof (120mm)",
+      "category": "bio",
+      "is_local_earth": true,
+      "description": "Bio-based local thatch grass / reed on bamboo frame. Natural micro-porous insulating layer.",
+      "thickness_m": 0.12,
+      "conductivity_w_mk": 0.15,
+      "density_kg_m3": 350,
+      "specific_heat_j_kgk": 1600,
+      "solar_absorptance": 0.50,
+      "emissivity": 0.85,
+      "u_value_w_m2k": 1.10
+    },
+    {
+      "id": "rcc_concrete",
+      "name": "RCC Concrete Slab (150mm)",
+      "category": "masonry",
+      "is_local_earth": false,
+      "description": "Reinforced cement concrete flat slab. Rapid night cooling without insulation.",
+      "thickness_m": 0.15,
+      "conductivity_w_mk": 1.40,
+      "density_kg_m3": 2400,
+      "specific_heat_j_kgk": 900,
+      "solar_absorptance": 0.70,
+      "emissivity": 0.90,
+      "u_value_w_m2k": 3.40
+    },
+    {
+      "id": "cgi_sheet",
+      "name": "Corrugated Galvanized Iron (CGI) Sheet (1.5mm)",
+      "category": "metal",
+      "is_local_earth": false,
+      "description": "Uninsulated corrugated tin/sheet metal roof. Extremely high thermal conductivity and rapid heat loss.",
+      "thickness_m": 0.0015,
+      "conductivity_w_mk": 45.0,
+      "density_kg_m3": 7800,
+      "specific_heat_j_kgk": 480,
+      "solar_absorptance": 0.75,
+      "emissivity": 0.25,
+      "u_value_w_m2k": 5.80
+    }
+  ],
+  "insulation_materials": [
+    {
+      "id": "none",
+      "name": "None (Uninsulated)",
+      "category": "none",
+      "is_local_earth": false,
+      "description": "Direct envelope heat transfer without thermal resistance layer.",
+      "thickness_m": 0.0,
+      "conductivity_w_mk": 1.0,
+      "density_kg_m3": 0,
+      "specific_heat_j_kgk": 0,
+      "u_reduction_factor": 1.0
+    },
+    {
+      "id": "straw_woodwool",
+      "name": "Compressed Straw / Wood-Wool Board (50mm)",
+      "category": "bio",
+      "is_local_earth": true,
+      "description": "Agricultural bio-waste straw insulation board bonded with natural mineral binders.",
+      "thickness_m": 0.05,
+      "conductivity_w_mk": 0.055,
+      "density_kg_m3": 280,
+      "specific_heat_j_kgk": 1800,
+      "u_reduction_factor": 0.45
+    },
+    {
+      "id": "eps_50",
+      "name": "Expanded Polystyrene - EPS (50mm)",
+      "category": "synthetic",
+      "is_local_earth": false,
+      "description": "Rigid closed-cell lightweight thermal insulation board.",
+      "thickness_m": 0.05,
+      "conductivity_w_mk": 0.036,
+      "density_kg_m3": 25,
+      "specific_heat_j_kgk": 1450,
+      "u_reduction_factor": 0.32
+    },
+    {
+      "id": "xps_100",
+      "name": "Extruded Polystyrene - High Performance XPS (100mm)",
+      "category": "synthetic",
+      "is_local_earth": false,
+      "description": "High-density moisture-resistant insulation for severe sub-zero cold climates.",
+      "thickness_m": 0.10,
+      "conductivity_w_mk": 0.028,
+      "density_kg_m3": 35,
+      "specific_heat_j_kgk": 1500,
+      "u_reduction_factor": 0.18
+    }
+  ],
+  "glazing_types": [
+    {
+      "id": "single_clear",
+      "name": "Single Glazed Clear (4mm)",
+      "u_value": 5.7,
+      "shgc": 0.82
+    },
+    {
+      "id": "double_clear",
+      "name": "Double Glazed Air Gap (4-12-4mm)",
+      "u_value": 2.8,
+      "shgc": 0.70
+    },
+    {
+      "id": "double_low_e",
+      "name": "Double Glazed Low-E Argon Filled (4-12-4mm)",
+      "u_value": 1.6,
+      "shgc": 0.55
+    }
+  ]
+}
