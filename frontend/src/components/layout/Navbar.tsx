@@ -32,9 +32,6 @@ export const Navbar: React.FC = () => {
                 <span className="text-2xl font-extrabold tracking-tight text-forest group-hover:text-teal-dark font-sans transition-colors">
                   AASHRAY
                 </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-mint text-forest border border-[#C8E6C9]">
-                  SIH26051 • DRDO
-                </span>
               </div>
               <p className="text-xs font-medium text-earth tracking-wide">
                 Mitti Se Mausam Tak

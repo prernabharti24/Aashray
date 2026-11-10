@@ -9,7 +9,6 @@ export const AboutPage: React.FC = () => {
       <div className="border-b border-[#E2DFD2] pb-8 text-center space-y-3">
         <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-mint text-forest border border-[#C8E6C9] text-xs font-bold uppercase tracking-wider">
           <Shield className="w-3.5 h-3.5 text-forest" />
-          <span>SIH26051 • DRDO Problem Statement</span>
         </div>
         
         <h1 className="text-4xl sm:text-5xl font-extrabold text-forest font-sans">

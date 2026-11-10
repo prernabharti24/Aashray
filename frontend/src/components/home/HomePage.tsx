@@ -26,7 +26,7 @@ export const HomePage: React.FC = () => {
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-mint border border-[#C8E6C9] shadow-2xs mb-6 animate-fade-in">
             <span className="w-2 h-2 rounded-full bg-leaf animate-ping" />
             <span className="text-xs font-bold text-forest uppercase tracking-wider">
-              SIH26051 • DRDO Shelter Architecture
+              Shelter Architecture
             </span>
           </div>
 
