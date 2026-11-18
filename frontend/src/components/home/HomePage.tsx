@@ -54,12 +54,12 @@ export const HomePage: React.FC = () => {
               <ArrowRight className="w-5 h-5 text-solar/80 group-hover:translate-x-1 transition-transform" />
             </button>
 
-            <button
+            {/* <button
               onClick={() => setActivePage('dashboard')}
               className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white hover:bg-[#F3F2EA] text-forest font-semibold text-base border border-[#D5D3C5] shadow-xs hover:shadow-md transition-all duration-200 flex items-center justify-center space-x-2"
             >
               <span>Open Workspace</span>
-            </button>
+            </button> */}
           </div>
 
         </div>
@@ -239,7 +239,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Bottom CTA Banner */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6">
+      {/* <section className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="bg-linear-to-r from-forest to-teal-dark rounded-3xl p-8 sm:p-10 text-white text-center shadow-xl relative overflow-hidden">
           <h3 className="text-2xl sm:text-3xl font-bold font-sans">
             Ready to design your climate-responsive shelter?
@@ -257,7 +257,7 @@ export const HomePage: React.FC = () => {
             </button>
           </div>
         </div>
-      </section>
+      </section> */}
 
     </div>
   );

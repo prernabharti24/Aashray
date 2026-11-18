@@ -71,7 +71,7 @@ export const Navbar: React.FC = () => {
               className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-forest hover:bg-teal-dark text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
             >
               <Sparkles className="w-4 h-4 text-solar" />
-              <span>Start Designing</span>
+              {/* <span>Start Designing</span> */}
             </button>
           </div>
 
