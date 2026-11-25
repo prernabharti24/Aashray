@@ -1,6 +1,7 @@
 import React from 'react';
 import { useShelter } from '../../context/ShelterContext';
 import { Home, Compass, Thermometer, BarChart2, Info, Sparkles, LayoutDashboard } from 'lucide-react';
+import { LiveWeatherIndicator } from './LiveWeatherIndicator';
 
 export const Navbar: React.FC = () => {
   const { activePage, setActivePage, setIsOnboardingOpen, hasSimulated } = useShelter();
@@ -64,11 +65,13 @@ export const Navbar: React.FC = () => {
             })}
           </nav>
 
-          {/* Quick Action Button */}
-          <div className="flex items-center space-x-3">
+          {/* Quick Action Button & Live Weather */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            <LiveWeatherIndicator />
             <button
               onClick={() => setIsOnboardingOpen(true)}
-              className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-forest hover:bg-teal-dark text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-95"
+              className="flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-forest hover:bg-teal-dark text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 shrink-0"
+              title="Start Designing"
             >
               <Sparkles className="w-4 h-4 text-solar" />
               {/* <span>Start Designing</span> */}
