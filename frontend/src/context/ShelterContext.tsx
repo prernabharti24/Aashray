@@ -33,6 +33,7 @@ interface ShelterContextType {
   isReportOpen: boolean;
   setIsReportOpen: (open: boolean) => void;
   climates: Climate[];
+  addCustomClimate: (climate: Climate) => void;
   materials: MaterialsDB;
   isLoading: boolean;
   hasSimulated: boolean;
@@ -118,6 +119,13 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setActivePage('results');
   };
 
+  const addCustomClimate = (climate: Climate) => {
+    setClimates(prev => {
+      if (prev.some(c => c.id === climate.id)) return prev;
+      return [...prev, climate];
+    });
+  };
+
   return (
     <ShelterContext.Provider
       value={{
@@ -137,6 +145,7 @@ export const ShelterProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isReportOpen,
         setIsReportOpen,
         climates,
+        addCustomClimate,
         materials,
         isLoading,
         hasSimulated,
