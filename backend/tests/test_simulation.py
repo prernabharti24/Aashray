@@ -48,3 +48,18 @@ def test_comparison_recommendation():
     # The recommended design with insulation & earth materials should have higher night temp in Ladakh
     assert comparison.recommended_result.temp_at_2am > comparison.current_result.temp_at_2am
     assert len(comparison.architectural_reasoning) > 0
+
+def test_temperature_graph_generation():
+    from backend.chart_service import generate_temperature_chart
+    manager = SimulationManager()
+    design = ShelterDesign(
+        id="test_graph",
+        name="Graph Test Shelter",
+        location_id="ladakh"
+    )
+    result = manager.run_simulation(design)
+    img_bytes = generate_temperature_chart(result.hourly_data)
+    assert isinstance(img_bytes, bytes)
+    assert len(img_bytes) > 1000
+    assert img_bytes.startswith(b'\x89PNG\r\n\x1a\n')
+

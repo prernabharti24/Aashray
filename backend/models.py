@@ -107,3 +107,41 @@ class DesignReport(BaseModel):
     materials_summary: Dict[str, Any]
     engineering_assumptions: List[str]
     limitations: List[str]
+
+class TemperatureGraphRequest(BaseModel):
+    hourly_data: List[HourlyPoint]
+
+class DetectedAnnotation(BaseModel):
+    text: str
+    box: Any
+    value_m: Optional[float] = None
+    unit: Optional[str] = None
+    orientation: str = "horizontal"
+
+class FloorPlanAnalysisResponse(BaseModel):
+    success: bool
+    has_dimensions: bool
+    length_m: Optional[float] = None
+    width_m: Optional[float] = None
+    pixel_length: Optional[float] = None
+    pixel_width: Optional[float] = None
+    detected_unit: Optional[str] = None
+    detected_scale: Optional[str] = None
+    confidence: float = 0.0
+    message: str = ""
+    annotations: List[DetectedAnnotation] = []
+    preview_image: str = ""
+    raw_preview_image: str = ""
+    image_width: int = 0
+    image_height: int = 0
+    outer_box: Optional[Dict[str, int]] = None
+    floorplan_id: Optional[str] = None
+
+
+class FloorPlanSaveRequest(BaseModel):
+    floorplan_id: str
+    user_corrected_length_m: Optional[float] = None
+    user_corrected_width_m: Optional[float] = None
+    ceiling_height_m: Optional[float] = None
+
+

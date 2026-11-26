@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useShelter } from '../../context/ShelterContext';
 import {
   CheckCircle2,
@@ -6,25 +6,17 @@ import {
   ArrowLeft,
   X,
   Sparkles,
-  Search,
-  Crosshair,
-  ChevronRight,
-  Snowflake,
-  Sun,
-  CloudRain,
-  Thermometer,
-  Info,
-  Loader2,
+  Upload,
+  FileText,
+  Trash2,
+  RefreshCw,
   AlertCircle,
-  Plus
+  Loader2,
+  Ruler,
+  Check
 } from 'lucide-react';
-import {
-  SEARCHABLE_CITIES,
-  searchLocations,
-  reverseGeocodeCoordinates,
-  generateClimateForLocation,
-  type CityLocation
-} from '../../utils/locationService';
+import { analyzeFloorPlanApi, saveFloorPlanMeasurementsApi } from '../../services/api';
+import type { FloorPlanAnalysisResponse } from '../../types';
 
 export const OnboardingWizard: React.FC = () => {
   const {
@@ -40,52 +32,17 @@ export const OnboardingWizard: React.FC = () => {
 
   const [step, setStep] = useState<number>(1);
 
-  // Search & Geolocation States
-  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<CityLocation[]>(() => SEARCHABLE_CITIES.slice(0, 6));
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [isLocating, setIsLocating] = useState<boolean>(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  // Step 4: Material Planning States
-  const [selectedWallMaterials, setSelectedWallMaterials] = useState<string[]>(() => [
-    currentDesign.wall_material_id || 'red_brick'
-  ]);
-  const [selectedRoofMaterials, setSelectedRoofMaterials] = useState<string[]>(() => [
-    currentDesign.roof_material_id || 'thatch_bamboo'
-  ]);
-  const [customMaterials, setCustomMaterials] = useState<string[]>([]);
-  const [customInput, setCustomInput] = useState<string>('');
+  // Step 3 Floor Plan Upload & Dimension Extraction State
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [floorPlanAnalysis, setFloorPlanAnalysis] = useState<FloorPlanAnalysisResponse | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [analysisResult, setAnalysisResult] = useState<{
-    compatibilityScore: number;
-    title: string;
-    description: string;
-    suggestions: string[];
-  } | null>(null);
-
-  // Handle Search Input with Debounce
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (!searchQuery.trim()) {
-        setSearchResults(SEARCHABLE_CITIES.slice(0, 6));
-        return;
-      }
-      setIsSearching(true);
-      try {
-        const results = await searchLocations(searchQuery);
-        setSearchResults(results);
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
+  const [calibrationRefM, setCalibrationRefM] = useState<string>('');
+  const [calibrationScale, setCalibrationScale] = useState<string>('1:100');
+  const [dimensionsApplied, setDimensionsApplied] = useState<boolean>(false);
 
   if (!isOnboardingOpen) return null;
 
@@ -401,15 +358,116 @@ export const OnboardingWizard: React.FC = () => {
     setActivePage('design');
   };
 
-  const activeClimate = climates.find(c => c.id === currentDesign.location_id) || climates[0];
+  const handleProcessFile = async (file: File, refM?: number, scale?: string) => {
+    const validExtensions = ['.png', '.jpg', '.jpeg', '.pdf'];
+    const hasValidExt = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+    if (!hasValidExt) {
+      setAnalysisError('Unsupported file type. Please upload a PNG, JPG, JPEG, or PDF floor plan.');
+      return;
+    }
+
+    setUploadedFile(file);
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    setDimensionsApplied(false);
+
+    try {
+      const result = await analyzeFloorPlanApi(
+        file,
+        refM,
+        undefined,
+        scale
+      );
+      setFloorPlanAnalysis(result);
+      if (result.has_dimensions && result.length_m && result.width_m) {
+        // Automatically populate existing Length and Width fields
+        updateDesign({
+          length_m: result.length_m,
+          width_m: result.width_m
+        });
+        setDimensionsApplied(true);
+      }
+    } catch (err: any) {
+      console.error('Floor plan analysis error:', err);
+      setAnalysisError(err.message || 'Failed to analyze floor plan. Please verify the file and try again.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      handleProcessFile(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      handleProcessFile(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+    setFloorPlanAnalysis(null);
+    setAnalysisError(null);
+    setDimensionsApplied(false);
+    setCalibrationRefM('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCalibrate = async () => {
+    if (!uploadedFile) return;
+    const refM = parseFloat(calibrationRefM);
+    if (!refM || refM <= 0) {
+      setAnalysisError('Please enter a valid positive reference measurement in meters (e.g. 6.0).');
+      return;
+    }
+    setIsCalibrating(true);
+    try {
+      await handleProcessFile(uploadedFile, refM, calibrationScale || undefined);
+    } finally {
+      setIsCalibrating(false);
+    }
+  };
+
+  const handleApplyDimensions = () => {
+    if (floorPlanAnalysis?.length_m && floorPlanAnalysis?.width_m) {
+      updateDesign({
+        length_m: floorPlanAnalysis.length_m,
+        width_m: floorPlanAnalysis.width_m
+      });
+      setDimensionsApplied(true);
+      if (floorPlanAnalysis.floorplan_id) {
+        saveFloorPlanMeasurementsApi(
+          floorPlanAnalysis.floorplan_id,
+          floorPlanAnalysis.length_m,
+          floorPlanAnalysis.width_m,
+          currentDesign.height_m
+        );
+      }
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-      <div
-        className={`relative bg-[#FBF8F2] w-full ${
-          step === 1 || step === 4 ? 'max-w-5xl' : 'max-w-3xl'
-        } rounded-[28px] shadow-2xl border border-[#E0DED3] overflow-hidden animate-in fade-in zoom-in-95 duration-200 transition-all`}
-      >
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="relative bg-white w-full max-w-2xl sm:max-w-3xl rounded-3xl shadow-2xl border border-[#E0DED3] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* ============================================================== */}
         {/* HEADER SECTION (Deep Emerald Header Matching Reference Images) */}
@@ -759,68 +817,388 @@ export const OnboardingWizard: React.FC = () => {
             </div>
           )}
 
-          {/* ------------------------------------------------------------ */}
-          {/* STEP 3: SIZE                                                 */}
-          {/* ------------------------------------------------------------ */}
+          {/* STEP 3: Size & Floor Plan Upload */}
           {step === 3 && (
             <div className="space-y-6">
-              <p className="text-sm text-gray-600">
-                Specify the primary external architectural dimensions in meters:
-              </p>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-[#E5E3D8]">
-                  <label className="block text-xs font-bold text-[#075C55] uppercase tracking-wider mb-1">
-                    Length (m)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="2"
-                    max="20"
-                    value={currentDesign.length_m}
-                    onChange={e => updateDesign({ length_m: parseFloat(e.target.value) || 4.0 })}
-                    className="w-full text-2xl font-bold text-[#075C55] bg-[#FAF9F5] border border-[#D5D3C5] rounded-xl px-3 py-2 text-center focus:ring-2 focus:ring-[#075C55] outline-none"
-                  />
-                  <span className="text-[11px] text-gray-400 text-center block mt-1">Frontage</span>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-[#E5E3D8]">
-                  <label className="block text-xs font-bold text-[#075C55] uppercase tracking-wider mb-1">
-                    Width (m)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="2"
-                    max="20"
-                    value={currentDesign.width_m}
-                    onChange={e => updateDesign({ width_m: parseFloat(e.target.value) || 3.0 })}
-                    className="w-full text-2xl font-bold text-[#075C55] bg-[#FAF9F5] border border-[#D5D3C5] rounded-xl px-3 py-2 text-center focus:ring-2 focus:ring-[#075C55] outline-none"
-                  />
-                  <span className="text-[11px] text-gray-400 text-center block mt-1">Depth</span>
-                </div>
-
-                <div className="bg-white p-4 rounded-2xl border border-[#E5E3D8]">
-                  <label className="block text-xs font-bold text-[#075C55] uppercase tracking-wider mb-1">
-                    Height (m)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="2"
-                    max="6"
-                    value={currentDesign.height_m}
-                    onChange={e => updateDesign({ height_m: parseFloat(e.target.value) || 2.8 })}
-                    className="w-full text-2xl font-bold text-[#075C55] bg-[#FAF9F5] border border-[#D5D3C5] rounded-xl px-3 py-2 text-center focus:ring-2 focus:ring-[#075C55] outline-none"
-                  />
-                  <span className="text-[11px] text-gray-400 text-center block mt-1">Ceiling Height</span>
-                </div>
+              <div>
+                <p className="text-sm text-gray-600">
+                  Specify the primary external architectural dimensions in meters. You can upload an existing floor plan for automatic dimension detection, or enter measurements manually.
+                </p>
               </div>
 
-              <div className="bg-[#E5EFE2] border border-[#A5D6A7] rounded-2xl p-4 flex items-center justify-between text-xs text-[#075C55]">
-                <span>Total Floor Area: <strong>{(currentDesign.length_m * currentDesign.width_m).toFixed(1)} m²</strong></span>
-                <span>Enclosed Volume: <strong>{(currentDesign.length_m * currentDesign.width_m * currentDesign.height_m).toFixed(1)} m³</strong></span>
+              {/* SECTION: House Plan Upload Area */}
+              <div className="bg-[#FAF9F5] p-5 rounded-2xl border border-[#E5E3D8] space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-4 h-4 text-forest" />
+                    <span className="text-xs font-bold text-forest uppercase tracking-wider">
+                      House Floor Plan (Automatic Dimension Detection)
+                    </span>
+                  </div>
+                  {floorPlanAnalysis && (
+                    <span className="text-[10px] bg-mint text-forest font-semibold px-2 py-0.5 rounded-full border border-[#A5D6A7]">
+                      {floorPlanAnalysis.has_dimensions ? 'Dimensions Detected' : 'Requires Calibration'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                {/* Drop Zone (when no file is uploaded) */}
+                {!uploadedFile && (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                      isDragOver
+                        ? 'border-forest bg-mint/30 shadow-inner'
+                        : 'border-[#C5C3B6] hover:border-forest/60 bg-white shadow-2xs'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="w-12 h-12 rounded-full bg-mint/50 flex items-center justify-center text-forest">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-forest">
+                          Drag and drop your floor plan here
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          or click to browse from your computer
+                        </p>
+                      </div>
+                      <div className="pt-2 flex items-center justify-center space-x-2 text-[11px] text-gray-400 font-medium">
+                        <span className="px-2 py-0.5 bg-[#FAF9F5] rounded border border-[#E5E3D8]">PNG</span>
+                        <span className="px-2 py-0.5 bg-[#FAF9F5] rounded border border-[#E5E3D8]">JPG</span>
+                        <span className="px-2 py-0.5 bg-[#FAF9F5] rounded border border-[#E5E3D8]">JPEG</span>
+                        <span className="px-2 py-0.5 bg-[#FAF9F5] rounded border border-[#E5E3D8]">PDF</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* File Uploaded Header & Actions */}
+                {uploadedFile && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-white px-3.5 py-2.5 rounded-xl border border-[#D5D3C5]">
+                      <div className="flex items-center space-x-2.5 overflow-hidden">
+                        <div className="p-1.5 rounded-lg bg-mint/60 text-forest shrink-0">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div className="truncate text-left">
+                          <p className="text-xs font-bold text-forest truncate max-w-[200px] sm:max-w-xs">
+                            {uploadedFile.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            {(uploadedFile.size / 1024).toFixed(1)} KB • {uploadedFile.type || 'Architectural Plan'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isAnalyzing}
+                          className="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-gray-600 hover:text-forest hover:bg-[#FAF9F5] border border-[#E5E3D8] transition-colors flex items-center space-x-1"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Replace</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          disabled={isAnalyzing}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent transition-colors"
+                          title="Remove floor plan"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Analyzing Loader State */}
+                    {isAnalyzing && (
+                      <div className="bg-white rounded-xl border border-[#E5E3D8] p-6 text-center space-y-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-forest mx-auto" />
+                        <p className="text-xs font-bold text-forest">
+                          Analyzing floor plan geometry & OCR dimensions...
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          Detecting walls, dimension annotations, drawing scale, and envelope bounds...
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Error State */}
+                    {analysisError && !isAnalyzing && (
+                      <div className="bg-red-50 border border-red-200 text-red-800 p-3.5 rounded-xl text-xs space-y-2">
+                        <div className="flex items-start space-x-2.5">
+                          <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="font-semibold">Analysis Notice</p>
+                            <p className="text-[11px] mt-0.5">{analysisError}</p>
+                          </div>
+                        </div>
+                        {uploadedFile && (
+                          <div className="flex justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleProcessFile(uploadedFile)}
+                              className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-[11px] font-bold transition-colors"
+                            >
+                              Retry Analysis
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Visual Dimension Verification Preview */}
+                    {floorPlanAnalysis && !isAnalyzing && (
+                      <div className="space-y-3">
+                        <div className="relative bg-white rounded-xl border border-[#D5D3C5] overflow-hidden">
+                          <div className="p-2 border-b border-[#EFECE0] bg-[#FAF9F5] flex items-center justify-between text-[11px] text-gray-500">
+                            <span className="font-semibold text-forest">Visual Dimension Verification</span>
+                            <span>Detected envelope & measurement markers</span>
+                          </div>
+                          <div className="p-2 flex items-center justify-center max-h-72 overflow-hidden bg-slate-50">
+                            <img
+                              src={floorPlanAnalysis.preview_image || floorPlanAnalysis.raw_preview_image}
+                              alt="Floor plan with detected dimensions"
+                              className="max-h-64 w-auto object-contain rounded-lg shadow-2xs"
+                            />
+                          </div>
+                        </div>
+
+                        {/* CASE 1: Dimensions Detected Successfully */}
+                        {floorPlanAnalysis.has_dimensions ? (
+                          <div className="bg-mint/40 border border-[#A5D6A7] rounded-xl p-3.5 space-y-2.5">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div>
+                                <div className="flex items-center space-x-1.5 text-forest font-bold text-xs">
+                                  <CheckCircle2 className="w-4 h-4 text-forest" />
+                                  <span>Dimensions Detected Successfully</span>
+                                </div>
+                                <div className="text-sm font-extrabold text-forest mt-0.5">
+                                  Length: {floorPlanAnalysis.length_m} m &nbsp;•&nbsp; Width: {floorPlanAnalysis.width_m} m
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={handleApplyDimensions}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center space-x-1.5 ${
+                                  dimensionsApplied
+                                    ? 'bg-forest text-white'
+                                    : 'bg-forest hover:bg-teal-dark text-white'
+                                }`}
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>{dimensionsApplied ? 'Applied to Model' : 'Confirm & Apply'}</span>
+                              </button>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#A5D6A7]/50 text-[11px] text-forest/90">
+                              <span className="bg-white/80 px-2 py-0.5 rounded-md font-medium border border-[#A5D6A7]">
+                                Unit: <strong>{floorPlanAnalysis.detected_unit || 'meters'}</strong>
+                              </span>
+                              {floorPlanAnalysis.detected_scale && (
+                                <span className="bg-white/80 px-2 py-0.5 rounded-md font-medium border border-[#A5D6A7]">
+                                  Scale: <strong>{floorPlanAnalysis.detected_scale}</strong>
+                                </span>
+                              )}
+                              <span className="bg-white/80 px-2 py-0.5 rounded-md font-medium border border-[#A5D6A7]">
+                                Confidence: <strong>{Math.round(floorPlanAnalysis.confidence * 100)}%</strong>
+                              </span>
+                              <span className="text-forest text-[11px] italic">
+                                {dimensionsApplied
+                                  ? '✓ Populated in Length & Width fields below.'
+                                  : 'Click Confirm to populate the fields below.'}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          /* CASE 2: No Dimensions / Scale Detected (Never Guess!) */
+                          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3.5 space-y-3">
+                            <div className="flex items-start space-x-2">
+                              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                              <div className="text-xs">
+                                <p className="font-bold text-amber-900">
+                                  No Clear Dimension Labels or Scale Found
+                                </p>
+                                <p className="text-amber-800 text-[11px] mt-0.5">
+                                  AASHRAY never invents or guesses dimensions. To calibrate this drawing, provide a known reference measurement or select its architectural scale:
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 items-end">
+                              <div className="sm:col-span-5">
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-900 mb-1">
+                                  Known Frontage Length (m)
+                                </label>
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  min="1"
+                                  max="30"
+                                  placeholder="e.g. 6.0"
+                                  value={calibrationRefM}
+                                  onChange={e => setCalibrationRefM(e.target.value)}
+                                  className="w-full text-xs font-bold text-forest bg-white border border-amber-300 rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-forest outline-none"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-4">
+                                <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-900 mb-1">
+                                  Drawing Scale
+                                </label>
+                                <select
+                                  value={calibrationScale}
+                                  onChange={e => setCalibrationScale(e.target.value)}
+                                  className="w-full text-xs font-bold text-forest bg-white border border-amber-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-forest outline-none"
+                                >
+                                  <option value="1:100">1:100</option>
+                                  <option value="1:50">1:50</option>
+                                  <option value="1:200">1:200</option>
+                                  <option value="1:500">1:500</option>
+                                </select>
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <button
+                                  type="button"
+                                  onClick={handleCalibrate}
+                                  disabled={isCalibrating || !calibrationRefM}
+                                  className="w-full px-3 py-1.5 rounded-lg bg-forest hover:bg-teal-dark text-white font-bold text-xs flex items-center justify-center space-x-1 shadow-xs disabled:opacity-50 transition-all"
+                                >
+                                  {isCalibrating ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Ruler className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Calibrate</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION: Architectural Envelope Dimensions (Manual / Populated) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-forest uppercase tracking-wider">
+                    Shelter Dimensions (Length, Width & Height)
+                  </span>
+                  <span className="text-[11px] text-gray-500">
+                    Values populate from plan, or adjust manually
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E5E3D8]">
+                    <label className="block text-xs font-bold text-forest uppercase tracking-wider mb-1">
+                      Length (m)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1.5"
+                      max="30"
+                      value={currentDesign.length_m}
+                      onChange={e => {
+                        const newL = parseFloat(e.target.value) || 4.0;
+                        updateDesign({ length_m: newL });
+                        setDimensionsApplied(false);
+                        if (floorPlanAnalysis?.floorplan_id) {
+                          saveFloorPlanMeasurementsApi(
+                            floorPlanAnalysis.floorplan_id,
+                            newL,
+                            currentDesign.width_m,
+                            currentDesign.height_m
+                          );
+                        }
+                      }}
+                      className="w-full text-2xl font-bold text-forest bg-white border border-[#D5D3C5] rounded-xl px-3 py-2 text-center focus:ring-2 focus:ring-forest outline-none"
+                    />
+                    <span className="text-[11px] text-gray-400 text-center block mt-1">Frontage</span>
+                  </div>
+
+                  <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E5E3D8]">
+                    <label className="block text-xs font-bold text-forest uppercase tracking-wider mb-1">
+                      Width (m)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1.5"
+                      max="30"
+                      value={currentDesign.width_m}
+                      onChange={e => {
+                        const newW = parseFloat(e.target.value) || 3.0;
+                        updateDesign({ width_m: newW });
+                        setDimensionsApplied(false);
+                        if (floorPlanAnalysis?.floorplan_id) {
+                          saveFloorPlanMeasurementsApi(
+                            floorPlanAnalysis.floorplan_id,
+                            currentDesign.length_m,
+                            newW,
+                            currentDesign.height_m
+                          );
+                        }
+                      }}
+                      className="w-full text-2xl font-bold text-forest bg-white border border-[#D5D3C5] rounded-xl px-3 py-2 text-center focus:ring-2 focus:ring-forest outline-none"
+                    />
+                    <span className="text-[11px] text-gray-400 text-center block mt-1">Depth</span>
+                  </div>
+
+                  <div className="bg-[#FAF9F5] p-4 rounded-2xl border border-[#E5E3D8]">
+                    <label className="block text-xs font-bold text-forest uppercase tracking-wider mb-1">
+                      Height (m)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1.8"
+                      max="10"
+                      value={currentDesign.height_m}
+                      onChange={e => {
+                        const newH = parseFloat(e.target.value) || 2.8;
+                        updateDesign({ height_m: newH });
+                        if (floorPlanAnalysis?.floorplan_id) {
+                          saveFloorPlanMeasurementsApi(
+                            floorPlanAnalysis.floorplan_id,
+                            currentDesign.length_m,
+                            currentDesign.width_m,
+                            newH
+                          );
+                        }
+                      }}
+                      className="w-full text-2xl font-bold text-forest bg-white border border-[#D5D3C5] rounded-xl px-3 py-2 text-center focus:ring-2 focus:ring-forest outline-none"
+                    />
+                    <span className="text-[11px] text-gray-400 text-center block mt-1">Ceiling Height</span>
+                  </div>
+                </div>
+
+                <div className="bg-soft-blue/40 border border-[#BBDDFF] rounded-2xl p-4 flex items-center justify-between text-xs text-[#1E3A8A]">
+                  <span>Total Floor Area: <strong>{(currentDesign.length_m * currentDesign.width_m).toFixed(1)} m²</strong></span>
+                  <span>Enclosed Volume: <strong>{(currentDesign.length_m * currentDesign.width_m * currentDesign.height_m).toFixed(1)} m³</strong></span>
+                </div>
               </div>
             </div>
           )}

@@ -1,7 +1,6 @@
-import os
-import json
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from sqlalchemy.orm import Session
 from .base_engine import BaseSimulationEngine
 from .reduced_order_engine import ReducedOrderSimulationEngine
 from .ansys_engine import ANSYSSimulationEngine
@@ -13,47 +12,60 @@ from ..models import (
     ComparisonMetric,
     DesignReport
 )
+from ..database import SessionLocal
+from .. import crud
 
 class SimulationManager:
-    def __init__(self, data_dir: Optional[str] = None):
-        if data_dir is None:
-            data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-        self.data_dir = data_dir
-        self.climates: List[Dict[str, Any]] = self._load_json("climates.json")
-        self.materials: Dict[str, Any] = self._load_json("materials.json")
-
+    """
+    SimulationManager manages climate data and material properties queried
+    directly from MySQL, and orchestrates the transient physics engines.
+    """
+    def __init__(self, db: Optional[Session] = None):
+        self.db = db
         self.engines: Dict[str, BaseSimulationEngine] = {
             "reduced_order": ReducedOrderSimulationEngine(),
             "ansys": ANSYSSimulationEngine(),
             "demo": DemoSimulationEngine()
         }
 
-    def _load_json(self, filename: str) -> Any:
-        path = os.path.join(self.data_dir, filename)
-        if os.path.exists(path):
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return []
+    def get_climates(self, db: Optional[Session] = None) -> List[Dict[str, Any]]:
+        active_db = db or self.db
+        if active_db:
+            return crud.get_climates(active_db)
+        with SessionLocal() as session:
+            return crud.get_climates(session)
 
-    def get_climates(self) -> List[Dict[str, Any]]:
-        return self.climates
+    def get_climate(self, climate_id: str, db: Optional[Session] = None) -> Dict[str, Any]:
+        active_db = db or self.db
+        if active_db:
+            clim = crud.get_climate_by_id(active_db, climate_id)
+            if clim:
+                return clim
+            all_climates = crud.get_climates(active_db)
+            return all_climates[0] if all_climates else {}
+        with SessionLocal() as session:
+            clim = crud.get_climate_by_id(session, climate_id)
+            if clim:
+                return clim
+            all_climates = crud.get_climates(session)
+            return all_climates[0] if all_climates else {}
 
-    def get_climate(self, climate_id: str) -> Dict[str, Any]:
-        for c in self.climates:
-            if c["id"] == climate_id:
-                return c
-        return self.climates[0]
-
-    def get_materials(self) -> Dict[str, Any]:
-        return self.materials
+    def get_materials(self, db: Optional[Session] = None) -> Dict[str, Any]:
+        active_db = db or self.db
+        if active_db:
+            return crud.get_materials_dict(active_db)
+        with SessionLocal() as session:
+            return crud.get_materials_dict(session)
 
     def run_simulation(
         self,
         design: ShelterDesign,
         engine_type: str = "reduced_order",
-        initial_temp_c: Optional[float] = None
+        initial_temp_c: Optional[float] = None,
+        db: Optional[Session] = None
     ) -> SimulationResult:
-        climate = self.get_climate(design.location_id)
+        climate = self.get_climate(design.location_id, db=db)
+        materials = self.get_materials(db=db)
         engine = self.engines.get(engine_type)
         if not engine:
             engine = self.engines["reduced_order"]
@@ -62,15 +74,19 @@ class SimulationManager:
         if engine_type == "ansys" and not engine.is_ansys_connected():
             engine = self.engines["reduced_order"]
 
-        return engine.simulate(design, climate, self.materials, initial_temp_c)
+        return engine.simulate(design, climate, materials, initial_temp_c)
 
-    def generate_recommendation(self, current_design: ShelterDesign) -> ComparisonResponse:
+    def generate_recommendation(
+        self,
+        current_design: ShelterDesign,
+        db: Optional[Session] = None
+    ) -> ComparisonResponse:
         """
         Generate physically optimized shelter design using local earth materials and insulation.
         Simulates both designs to produce exact calculated deltas.
         """
-        climate = self.get_climate(current_design.location_id)
-        current_result = self.run_simulation(current_design)
+        climate = self.get_climate(current_design.location_id, db=db)
+        current_result = self.run_simulation(current_design, db=db)
 
         # Clone and optimize
         rec_dict = current_design.model_dump()
@@ -114,7 +130,7 @@ class SimulationManager:
             reasons.append("Added wood-wool roof insulation and Low-E glazing to deflect excessive midday solar radiation.")
 
         recommended_design = ShelterDesign(**rec_dict)
-        recommended_result = self.run_simulation(recommended_design)
+        recommended_result = self.run_simulation(recommended_design, db=db)
 
         # Calculate exact metrics
         temp_2am_diff = recommended_result.temp_at_2am - current_result.temp_at_2am
@@ -169,10 +185,10 @@ class SimulationManager:
             architectural_reasoning=reasons
         )
 
-    def generate_report(self, design: ShelterDesign) -> DesignReport:
-        climate = self.get_climate(design.location_id)
-        result = self.run_simulation(design)
-        comparison = self.generate_recommendation(design)
+    def generate_report(self, design: ShelterDesign, db: Optional[Session] = None) -> DesignReport:
+        climate = self.get_climate(design.location_id, db=db)
+        result = self.run_simulation(design, db=db)
+        comparison = self.generate_recommendation(design, db=db)
 
         return DesignReport(
             title=f"AASHRAY Architectural Thermal Performance Dossier — {design.name}",

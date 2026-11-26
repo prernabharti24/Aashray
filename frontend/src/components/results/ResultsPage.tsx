@@ -1,15 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShelter } from '../../context/ShelterContext';
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ReferenceLine,
-  CartesianGrid
-} from 'recharts';
+import { fetchTemperatureGraphApi } from '../../services/api';
 import {
   Thermometer,
   Moon,
@@ -30,6 +21,45 @@ export const ResultsPage: React.FC = () => {
     setIsReportOpen,
     setActivePage
   } = useShelter();
+
+  const [graphUrl, setGraphUrl] = useState<string | null>(null);
+  const [graphLoading, setGraphLoading] = useState<boolean>(false);
+  const [graphError, setGraphError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let createdUrl: string | null = null;
+
+    if (simulationResult?.hourly_data && simulationResult.hourly_data.length > 0) {
+      setGraphLoading(true);
+      setGraphError(null);
+
+      fetchTemperatureGraphApi(simulationResult.hourly_data)
+        .then((url) => {
+          if (active) {
+            createdUrl = url;
+            setGraphUrl(url);
+            setGraphLoading(false);
+          } else {
+            URL.revokeObjectURL(url);
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            console.error('Failed to generate Matplotlib graph:', err);
+            setGraphError('Unable to generate Matplotlib graph from backend.');
+            setGraphLoading(false);
+          }
+        });
+    }
+
+    return () => {
+      active = false;
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
+      }
+    };
+  }, [simulationResult?.hourly_data]);
 
   if (!simulationResult) {
     return (
@@ -232,48 +262,27 @@ export const ResultsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Recharts Diurnal Temperature Curve */}
-        <div className="w-full h-80 pt-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={simulationResult.hourly_data} margin={{ top: 20, right: 30, left: 0, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ECEAE0" />
-              <XAxis dataKey="time_label" stroke="#8C8A7B" tick={{ fontSize: 11 }} />
-              <YAxis stroke="#8C8A7B" unit="°C" domain={['auto', 'auto']} tick={{ fontSize: 11 }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '12px',
-                  border: '1px solid #D5D3C5',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  fontSize: '12px'
-                }}
-              />
-              
-              {/* Reference Lines for Key Architectural Events */}
-              <ReferenceLine x="06:00" stroke="#F59E0B" strokeDasharray="4 4" label={{ value: '🌅 Sunrise', position: 'top', fill: '#B45309', fontSize: 11 }} />
-              <ReferenceLine x="18:00" stroke="#EA580C" strokeDasharray="4 4" label={{ value: '🌇 Sunset', position: 'top', fill: '#C2410C', fontSize: 11 }} />
-              <ReferenceLine x="02:00" stroke="#1E40AF" strokeDasharray="4 4" label={{ value: '🌙 2 AM (Coldest)', position: 'insideTopLeft', fill: '#1E40AF', fontSize: 11 }} />
-
-              <Line
-                type="monotone"
-                dataKey="indoor_temp"
-                name="Indoor Temp (°C)"
-                stroke="#064C42"
-                strokeWidth={3.5}
-                dot={{ r: 3, fill: '#064C42' }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="outdoor_temp"
-                name="Outdoor Temp (°C)"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                strokeDasharray="4 4"
-                dot={{ r: 2, fill: '#3B82F6' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* Matplotlib Diurnal Temperature Curve */}
+        <div className="w-full h-80 pt-4 flex items-center justify-center">
+          {graphLoading && !graphUrl && (
+            <div className="flex flex-col items-center justify-center space-y-2 text-forest/70">
+              <div className="w-8 h-8 border-3 border-forest border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-semibold">Generating Matplotlib graph...</span>
+            </div>
+          )}
+          {graphError && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs text-center space-y-1">
+              <p className="font-semibold">Graph generation failed</p>
+              <p className="text-[11px] text-red-600">{graphError}</p>
+            </div>
+          )}
+          {graphUrl && (
+            <img
+              src={graphUrl}
+              alt="Indoor vs. Outdoor Temperature (24-Hour Cycle)"
+              className="w-full h-full object-contain rounded-2xl"
+            />
+          )}
         </div>
 
         {/* Explanatory Caption */}
