@@ -11,7 +11,8 @@ import {
   ChevronUp,
   Thermometer,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Home
 } from 'lucide-react';
 
 export const DesignPage: React.FC = () => {
@@ -127,6 +128,50 @@ export const DesignPage: React.FC = () => {
             <p className="text-xs text-gray-500 bg-[#FAF9F5] p-3 rounded-xl border border-[#EBE8DC]">
               <strong>Climate Context:</strong> {activeClimate.description}
             </p>
+          </div>
+
+          {/* 1.5 SHELTER TYPOLOGY */}
+          <div className="bg-white rounded-3xl p-6 border border-[#E2DFD2] shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Home className="w-5 h-5 text-forest" />
+                <h2 className="text-base font-bold text-forest">SHELTER TYPOLOGY</h2>
+              </div>
+              <span className="text-xs text-earth font-bold">{currentDesign.shelter_type || 'Community Shelter'}</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { id: 'Community Shelter', name: 'Community Shelter', icon: '🏛️', desc: 'Communal hall with gabled roof & drainage' },
+                { id: 'Worker / Army Barrack', name: 'Worker / Army Barrack', icon: '⛺', desc: 'Elongated barrack with end entry & side vents' },
+                { id: 'Transit / Bus Shelter', name: 'Transit / Bus Shelter', icon: '🚏', desc: 'Semi-open waiting pavilion with cantilever canopy' },
+                { id: 'High-Altitude Residence', name: 'High-Altitude Residence', icon: '🏡', desc: 'Steep pitch snow-shedding cottage with airlock' },
+                { id: 'Custom Architecture', name: 'Custom Architecture', icon: '📐', desc: 'Parametric modular envelope with overhang deck' }
+              ].map(t => {
+                const isSelected = (currentDesign.shelter_type || 'Community Shelter') === t.id ||
+                  (currentDesign.shelter_type === 'Worker Shelter' && t.id.includes('Worker')) ||
+                  (currentDesign.shelter_type === 'Bus Shelter' && t.id.includes('Transit')) ||
+                  (currentDesign.shelter_type === 'Residential Shelter' && t.id.includes('Residence')) ||
+                  (currentDesign.shelter_type === 'Custom Shelter' && t.id.includes('Custom'));
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => updateDesign({ shelter_type: t.id })}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-forest bg-mint/50 font-bold text-forest shadow-xs'
+                        : 'border-[#E5E3D8] hover:border-forest/40 bg-[#FAF9F5] text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-base">{t.icon}</span>
+                      <span className="text-xs font-bold leading-tight">{t.name}</span>
+                    </div>
+                    <span className="text-[10px] text-gray-500 line-clamp-1 block">{t.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* 2. SHELTER SIZE */}
