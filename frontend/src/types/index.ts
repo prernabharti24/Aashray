@@ -147,3 +147,36 @@ export interface DesignReport {
   engineering_assumptions: string[];
   limitations: string[];
 }
+
+export interface DetectedAnnotation {
+  text: string;
+  box: number[][];
+  value_m?: number;
+  unit?: string;
+  orientation?: string;
+}
+
+export interface FloorPlanAnalysisResponse {
+  success: boolean;
+  has_dimensions: boolean;
+  length_m?: number;
+  width_m?: number;
+  pixel_length?: number;
+  pixel_width?: number;
+  floorplan_id?: string;
+  detected_unit?: string;
+  detected_scale?: string;
+  confidence: number;
+  message: string;
+  annotations: DetectedAnnotation[];
+  preview_image: string;
+  raw_preview_image: string;
+  image_width: number;
+  image_height: number;
+  outer_box?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}

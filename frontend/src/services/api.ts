@@ -1,4 +1,4 @@
-import type { ShelterDesign, Climate, MaterialsDB, SimulationResult, ComparisonResponse } from '../types';
+import type { ShelterDesign, Climate, MaterialsDB, SimulationResult, ComparisonResponse, FloorPlanAnalysisResponse } from '../types';
 
 const API_BASE = 'http://localhost:8000/api';
 
@@ -390,6 +390,96 @@ export async function fetchRecommendationApi(design: ShelterDesign): Promise<Com
   }
   return generateClientRecommendation(design);
 }
+
+export async function fetchTemperatureGraphApi(hourlyData: any[]): Promise<string> {
+  const res = await fetch(`${API_BASE}/graph/temperature`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ hourly_data: hourlyData })
+  });
+  if (!res.ok) {
+    throw new Error(`Graph generation API failed with status ${res.status}`);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+export async function analyzeFloorPlanApi(
+  file: File,
+  referenceLengthM?: number,
+  referencePixelSpan?: number,
+  scaleRatio?: string,
+  ceilingHeightM?: number
+): Promise<FloorPlanAnalysisResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (referenceLengthM !== undefined && referenceLengthM !== null) {
+    formData.append("reference_length_m", referenceLengthM.toString());
+  }
+  if (referencePixelSpan !== undefined && referencePixelSpan !== null) {
+    formData.append("reference_pixel_span", referencePixelSpan.toString());
+  }
+  if (scaleRatio) {
+    formData.append("scale_ratio", scaleRatio);
+  }
+  if (ceilingHeightM !== undefined && ceilingHeightM !== null) {
+    formData.append("ceiling_height_m", ceilingHeightM.toString());
+  }
+
+  const endpoints = [`${API_BASE}/floorplan/analyze`, 'http://127.0.0.1:8000/api/floorplan/analyze'];
+  let lastError: any = null;
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Floor plan analysis failed with status ${res.status}`);
+      }
+
+      return await res.json();
+    } catch (err: any) {
+      lastError = err;
+      if (err.message && err.message.includes("Floor plan analysis failed")) {
+        throw err;
+      }
+    }
+  }
+
+  throw new Error(
+    lastError?.message?.includes("Failed to fetch") || lastError?.name === "TypeError"
+      ? "Cannot connect to the Aashray backend at http://localhost:8000. Please ensure the backend server is running (python run_backend.py)."
+      : (lastError?.message || "Failed to analyze floor plan.")
+  );
+}
+
+export async function saveFloorPlanMeasurementsApi(
+  floorplanId: string,
+  userCorrectedLengthM?: number,
+  userCorrectedWidthM?: number,
+  ceilingHeightM?: number
+): Promise<any> {
+  try {
+    const res = await fetch(`${API_BASE}/floorplan/save-measurements`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        floorplan_id: floorplanId,
+        user_corrected_length_m: userCorrectedLengthM,
+        user_corrected_width_m: userCorrectedWidthM,
+        ceiling_height_m: ceilingHeightM
+      })
+    });
+    if (res.ok) return await res.json();
+  } catch (e) {
+    console.warn("Error saving floor plan measurements to MySQL", e);
+  }
+}
+
 
 // Client-side transient physics engine fallback for offline / instant client experience
 function runClientTransientSimulation(design: ShelterDesign, initialTemp?: number): SimulationResult {
