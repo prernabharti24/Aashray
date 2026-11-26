@@ -2,12 +2,10 @@ import React from 'react';
 import { useShelter } from '../../context/ShelterContext';
 import heroBg from '../../assets/hero-bg.png';
 import { EnvelopeHeatExchange } from './EnvelopeHeatExchange';
+import { FeatureCards } from './FeatureCards';
 import {
   Sparkles,
-  ArrowRight,
-  Layers,
-  BarChart3,
-  CheckCircle2
+  ArrowRight
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
@@ -79,39 +77,7 @@ export const HomePage: React.FC = () => {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <div className="bg-white p-6 rounded-3xl border border-[#E2DFD2] shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-2xl bg-mint flex items-center justify-center text-forest mb-4">
-              <Layers className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-forest mb-2">Local Earth Materials</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Prioritizes Adobe mud, Rammed Earth, Poplar twig decks, and strawboard insulation. Evaluates thermal mass flywheels that store daytime warmth for cold nights.
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-[#E2DFD2] shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-2xl bg-soft-blue flex items-center justify-center text-[#1E3A8A] mb-4">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-forest mb-2">Diurnal Transient Analysis</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Clear 24-hour indoor vs outdoor temperature curves highlighting critical 2 AM minimums, sunset heat retention, and dominant heat-loss pathways.
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl border border-[#E2DFD2] shadow-sm hover:shadow-md transition-shadow">
-            <div className="w-12 h-12 rounded-2xl bg-solar/40 flex items-center justify-center text-forest mb-4">
-              <CheckCircle2 className="w-6 h-6 text-forest" />
-            </div>
-            <h3 className="text-lg font-bold text-forest mb-2">Calculated Recommendations</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">
-              No guesswork or arbitrary scores. Real transient thermal deltas (e.g. +6.4°C higher 2 AM temperature) explain exactly why a recommended modification works.
-            </p>
-          </div>
-
-        </div>
+        <FeatureCards />
       </section>
 
       {/* Bottom CTA Banner */}
