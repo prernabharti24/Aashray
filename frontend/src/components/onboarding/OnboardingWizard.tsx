@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useShelter } from '../../context/ShelterContext';
 import {
   CheckCircle2,
@@ -6,6 +6,14 @@ import {
   ArrowLeft,
   X,
   Sparkles,
+  Search,
+  Crosshair,
+  ChevronRight,
+  Snowflake,
+  Sun,
+  CloudRain,
+  Thermometer,
+  Info,
   Upload,
   FileText,
   Trash2,
@@ -13,10 +21,18 @@ import {
   AlertCircle,
   Loader2,
   Ruler,
-  Check
+  Check,
+  Plus
 } from 'lucide-react';
 import { analyzeFloorPlanApi, saveFloorPlanMeasurementsApi } from '../../services/api';
 import type { FloorPlanAnalysisResponse } from '../../types';
+import {
+  SEARCHABLE_CITIES,
+  searchLocations,
+  reverseGeocodeCoordinates,
+  generateClimateForLocation,
+  type CityLocation
+} from '../../utils/locationService';
 
 export const OnboardingWizard: React.FC = () => {
   const {
@@ -29,6 +45,31 @@ export const OnboardingWizard: React.FC = () => {
     addCustomClimate,
     runComparison
   } = useShelter();
+
+  // Search & Geolocation States
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<CityLocation[]>(() => SEARCHABLE_CITIES.slice(0, 6));
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Step 4: Material Planning States
+  const [selectedWallMaterials, setSelectedWallMaterials] = useState<string[]>(() => [
+    currentDesign.wall_material_id || 'red_brick'
+  ]);
+  const [selectedRoofMaterials, setSelectedRoofMaterials] = useState<string[]>(() => [
+    currentDesign.roof_material_id || 'thatch_bamboo'
+  ]);
+  const [customMaterials, setCustomMaterials] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState<string>('');
+  const [analysisResult, setAnalysisResult] = useState<{
+    compatibilityScore: number;
+    title: string;
+    description: string;
+    suggestions: string[];
+  } | null>(null);
 
   const [step, setStep] = useState<number>(1);
 
@@ -44,7 +85,30 @@ export const OnboardingWizard: React.FC = () => {
   const [calibrationScale, setCalibrationScale] = useState<string>('1:100');
   const [dimensionsApplied, setDimensionsApplied] = useState<boolean>(false);
 
+  // Handle Search Input with Debounce
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults(SEARCHABLE_CITIES.slice(0, 6));
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const results = await searchLocations(searchQuery);
+        setSearchResults(results);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   if (!isOnboardingOpen) return null;
+
+  const activeClimate = climates.find(c => c.id === currentDesign.location_id) || climates[0];
 
   // 5 Recommended Extreme Regions (Step 1)
   const recommendedRegions = [
