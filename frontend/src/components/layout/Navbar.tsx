@@ -1,10 +1,10 @@
 import React from 'react';
 import { useShelter } from '../../context/ShelterContext';
-import { Home, Compass, Thermometer, BarChart2, Info, Sparkles, LayoutDashboard } from 'lucide-react';
+import { Home, Compass, Thermometer, BarChart2, Info, LogIn, LayoutDashboard } from 'lucide-react';
 import { LiveWeatherIndicator } from './LiveWeatherIndicator';
 
 export const Navbar: React.FC = () => {
-  const { activePage, setActivePage, setIsOnboardingOpen, hasSimulated } = useShelter();
+  const { activePage, setActivePage, hasSimulated } = useShelter();
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
@@ -65,16 +65,16 @@ export const Navbar: React.FC = () => {
             })}
           </nav>
 
-          {/* Quick Action Button & Live Weather */}
+          {/* Live Weather & Login */}
           <div className="flex items-center space-x-2 sm:space-x-3">
             <LiveWeatherIndicator />
             <button
-              onClick={() => setIsOnboardingOpen(true)}
-              className="flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-forest hover:bg-teal-dark text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 shrink-0"
-              title="Start Designing"
+              onClick={() => setActivePage('login')}
+              className="flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#075C55] hover:bg-teal-dark text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-95 shrink-0"
+              title="Login"
             >
-              <Sparkles className="w-4 h-4 text-solar" />
-              {/* <span>Start Designing</span> */}
+              <LogIn className="w-4 h-4 text-white" />
+              <span className="hidden sm:inline">Login</span>
             </button>
           </div>
 

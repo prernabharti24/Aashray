@@ -11,9 +11,16 @@ import { AboutPage } from './components/about/AboutPage';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ComparisonModal } from './components/comparison/ComparisonModal';
 import { ReportModal } from './components/report/ReportModal';
+import { LoginPage } from './components/auth/LoginPage';
 
 export const AppContent: React.FC = () => {
   const { activePage } = useShelter();
+
+  // On the login page we render a clean, full-screen auth layout —
+  // the Navbar, Footer, and global modals are intentionally hidden.
+  if (activePage === 'login') {
+    return <LoginPage />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-cream text-[#1A2E2B] selection:bg-mint selection:text-forest">
