@@ -4,14 +4,17 @@ import subprocess
 import time
 
 import os
+import sys
 
 def run_e2e():
+    aashray_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     sub_env = dict(os.environ)
-    sub_env['PYTHONPATH'] = 'Aashray'
+    sub_env['PYTHONPATH'] = aashray_root
     sub_env['DISABLE_SQLALCHEMY_CEXT'] = '1'
     proc = subprocess.Popen(
-        ['.\\venv\\Scripts\\python.exe', '-m', 'uvicorn', 'backend.main:app', '--host', '127.0.0.1', '--port', '8000'],
-        env=sub_env
+        [sys.executable, '-m', 'uvicorn', 'backend.main:app', '--host', '127.0.0.1', '--port', '8000'],
+        env=sub_env,
+        cwd=aashray_root
     )
 
     try:
@@ -137,6 +140,66 @@ def run_e2e():
         res_udel = json.loads(urllib.request.urlopen(user_del).read().decode('utf-8'))
         print('6d. User DELETE:', res_udel)
         assert res_udel['status'] == 'deleted'
+
+        # 6e. User Registration via /api/auth/register
+        auth_reg_req = urllib.request.Request(
+            'http://127.0.0.1:8000/api/auth/register',
+            data=json.dumps({
+                'fullName': 'Aashray Lead Architect',
+                'email': 'e2e_lead@aashray.org',
+                'password': 'SecurePassword@2026',
+                'confirmPassword': 'SecurePassword@2026',
+                'role': 'architect'
+            }).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        res_auth_reg = json.loads(urllib.request.urlopen(auth_reg_req).read().decode('utf-8'))
+        print('6e. Auth Register (/api/auth/register):', res_auth_reg['status'], res_auth_reg['user']['email'])
+        assert res_auth_reg['status'] == 'success'
+        assert res_auth_reg['user']['email'] == 'e2e_lead@aashray.org'
+        assert 'token' in res_auth_reg
+
+        # 6f. Duplicate registration should return 400
+        try:
+            urllib.request.urlopen(auth_reg_req)
+            assert False, 'Duplicate registration should have raised HTTPError 400'
+        except urllib.error.HTTPError as e:
+            print('6f. Duplicate registration correctly blocked with status:', e.code)
+            assert e.code == 400
+
+        # 6g. Auth Login via /api/auth/login
+        auth_login_req = urllib.request.Request(
+            'http://127.0.0.1:8000/api/auth/login',
+            data=json.dumps({
+                'email': 'e2e_lead@aashray.org',
+                'password': 'SecurePassword@2026'
+            }).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        res_auth_login = json.loads(urllib.request.urlopen(auth_login_req).read().decode('utf-8'))
+        print('6g. Auth Login (/api/auth/login):', res_auth_login['status'], 'token length =', len(res_auth_login['token']))
+        assert res_auth_login['status'] == 'success'
+        assert res_auth_login['user']['email'] == 'e2e_lead@aashray.org'
+
+        # 6h. Auth Login with wrong password should return 401
+        bad_login_req = urllib.request.Request(
+            'http://127.0.0.1:8000/api/auth/login',
+            data=json.dumps({
+                'email': 'e2e_lead@aashray.org',
+                'password': 'IncorrectPassword'
+            }).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        try:
+            urllib.request.urlopen(bad_login_req)
+            assert False, 'Bad login should have raised HTTPError 401'
+        except urllib.error.HTTPError as e:
+            print('6h. Bad login correctly rejected with status:', e.code)
+            assert e.code == 401
+
+        # Clean up auth user
+        del_auth = urllib.request.Request(f'http://127.0.0.1:8000/api/users/{res_auth_reg["user"]["id"]}', method='DELETE')
+        urllib.request.urlopen(del_auth)
 
         # 7. Simulate endpoint (persisting simulation to MySQL)
         sim_req = urllib.request.Request(

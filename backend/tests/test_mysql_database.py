@@ -278,3 +278,36 @@ def test_mysql_floorplan_crud(db_session):
     deleted = crud.delete_floorplan(db_session, test_id)
     assert deleted is True
     assert crud.get_floorplan_by_id(db_session, test_id) is None
+
+def test_mysql_user_registration_and_login(db_session):
+    test_email = "architect_sih@aashray.in"
+    crud.delete_user(db_session, "test_auth_user_01")
+    # Clean up by email if exists
+    existing = crud.get_user_by_email(db_session, test_email)
+    if existing:
+        crud.delete_user(db_session, existing.id)
+
+    # 1. Register user with password hashing
+    user = crud.create_user(db_session, {
+        "id": "test_auth_user_01",
+        "email": test_email,
+        "name": "SIH Architect",
+        "password": "SecurePassword@2026",
+        "role": "architect"
+    })
+    assert user.id == "test_auth_user_01"
+    assert user.password_hash is not None
+    assert user.password_hash.startswith("pbkdf2:sha256:")
+
+    # 2. Authenticate with correct password
+    auth_user = crud.authenticate_user(db_session, test_email, "SecurePassword@2026")
+    assert auth_user is not None
+    assert auth_user.id == "test_auth_user_01"
+
+    # 3. Authenticate with wrong password -> should return None
+    bad_auth = crud.authenticate_user(db_session, test_email, "WrongPassword")
+    assert bad_auth is None
+
+    # Clean up
+    crud.delete_user(db_session, "test_auth_user_01")
+

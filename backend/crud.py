@@ -1,6 +1,7 @@
 import uuid
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
+from .auth_utils import hash_password, verify_password
 from .db_models import (
     ClimateModel,
     MaterialModel,
@@ -421,11 +422,16 @@ def delete_report(db: Session, report_id: str) -> bool:
 # ==========================================
 
 def create_user(db: Session, data: Dict[str, Any]) -> UserModel:
+    pwd_hash = data.get("password_hash")
+    if not pwd_hash and "password" in data and data["password"]:
+        pwd_hash = hash_password(data["password"])
+
     user = UserModel(
         id=data.get("id") or str(uuid.uuid4()),
-        email=data["email"],
-        name=data["name"],
-        role=data.get("role", "architect")
+        email=data["email"].strip().lower(),
+        name=data["name"].strip(),
+        role=data.get("role", "architect"),
+        password_hash=pwd_hash
     )
     db.add(user)
     db.commit()
@@ -436,14 +442,26 @@ def get_user_by_id(db: Session, user_id: str) -> Optional[UserModel]:
     return db.query(UserModel).filter(UserModel.id == user_id).first()
 
 def get_user_by_email(db: Session, email: str) -> Optional[UserModel]:
-    return db.query(UserModel).filter(UserModel.email == email).first()
+    return db.query(UserModel).filter(UserModel.email == email.strip().lower()).first()
+
+def authenticate_user(db: Session, email: str, password: str) -> Optional[UserModel]:
+    user = get_user_by_email(db, email)
+    if not user:
+        return None
+    if not user.password_hash:
+        return None
+    if verify_password(user.password_hash, password):
+        return user
+    return None
 
 def update_user(db: Session, user_id: str, data: Dict[str, Any]) -> Optional[UserModel]:
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         return None
     for k, v in data.items():
-        if hasattr(user, k):
+        if k == "password" and v:
+            user.password_hash = hash_password(v)
+        elif hasattr(user, k):
             setattr(user, k, v)
     db.commit()
     db.refresh(user)

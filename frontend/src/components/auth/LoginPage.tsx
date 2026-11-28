@@ -164,11 +164,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
         });
       }
     } catch {
-      // Backend not available — inform user clearly
       setNotice({
-        type: 'info',
+        type: 'error',
         message:
-          'Authentication backend is not currently running. Start the backend server (python run_backend.py) and try again.',
+          'Could not reach the server. Please verify the backend is running and try again.',
       });
     } finally {
       setIsLoading(false);
@@ -348,38 +347,50 @@ const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
     setNotice(null);
 
     try {
-      // Create user via backend API
-      const res = await fetch(`${API_BASE}/users`, {
+      // Create user via backend auth registration endpoint
+      const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: `user_${Date.now()}`,
-          name: fields.fullName.trim(),
+          fullName: fields.fullName.trim(),
           email: fields.email.trim().toLowerCase(),
+          password: fields.password,
+          confirmPassword: fields.confirmPassword,
           role: 'architect',
         }),
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
         setNotice({
           type: 'success',
-          message: 'Account created successfully! You can now log in.',
+          message: data?.message || 'Account created successfully! You can now log in.',
+        });
+        setFields({
+          fullName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
         });
         setTimeout(() => onSwitchToLogin(), 1500);
       } else {
         const err = await res.json().catch(() => ({}));
         const detail = err?.detail || '';
-        if (detail.toLowerCase().includes('duplicate') || detail.toLowerCase().includes('unique')) {
+        if (
+          detail.toLowerCase().includes('duplicate') ||
+          detail.toLowerCase().includes('unique') ||
+          detail.toLowerCase().includes('already exists')
+        ) {
           setNotice({ type: 'error', message: 'An account with this email already exists.' });
         } else {
-          setNotice({ type: 'error', message: detail || 'Could not create account. Please try again.' });
+          setNotice({ type: 'error', message: detail || 'Could not create account. Please check your details and try again.' });
         }
       }
     } catch {
       setNotice({
-        type: 'info',
+        type: 'error',
         message:
-          'Authentication backend is not currently running. Start the backend server (python run_backend.py) to register.',
+          'Could not reach the server. Please verify the backend is running and try again.',
       });
     } finally {
       setIsLoading(false);

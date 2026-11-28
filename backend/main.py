@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from .database import get_db, init_db
 from . import crud
+from .auth_utils import generate_session_token
 from .models import (
     ShelterDesign,
     SimulationRequest,
@@ -18,7 +19,11 @@ from .models import (
     DesignReport,
     TemperatureGraphRequest,
     FloorPlanAnalysisResponse,
-    FloorPlanSaveRequest
+    FloorPlanSaveRequest,
+    UserRegisterRequest,
+    UserLoginRequest,
+    UserAuthResponse,
+    UserResponse
 )
 from .physics.simulation_manager import SimulationManager
 from .chart_service import generate_temperature_chart
@@ -437,17 +442,118 @@ def delete_report(report_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Database error deleting report: {str(e)}")
 
 # ==========================================
+# AUTHENTICATION & REGISTRATION (MySQL)
+# ==========================================
+
+import re
+
+EMAIL_REGEX = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+@app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
+@app.post("/api/auth/signup", status_code=status.HTTP_201_CREATED)
+def register_user(req: UserRegisterRequest, db: Session = Depends(get_db)):
+    """
+    Registers a new user into MySQL with secure password hashing.
+    """
+    # 1. Validation
+    name = req.fullName.strip() if req.fullName else ""
+    if len(name) < 2:
+        raise HTTPException(status_code=400, detail="Full name must be at least 2 characters.")
+
+    email = req.email.strip().lower() if req.email else ""
+    if not EMAIL_REGEX.match(email):
+        raise HTTPException(status_code=400, detail="Enter a valid email address.")
+
+    if not req.password or len(req.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters long.")
+
+    if req.confirmPassword is not None and req.password != req.confirmPassword:
+        raise HTTPException(status_code=400, detail="Passwords do not match.")
+
+    # 2. Check if email already exists
+    existing = crud.get_user_by_email(db, email)
+    if existing:
+        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+
+    # 3. Create user in MySQL
+    try:
+        user = crud.create_user(db, {
+            "name": name,
+            "email": email,
+            "password": req.password,
+            "role": req.role or "architect"
+        })
+        token = generate_session_token(user.id, user.email)
+        return {
+            "status": "success",
+            "message": "Account created successfully! You can now log in.",
+            "token": token,
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "role": user.role
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        err_msg = str(e).lower()
+        if "duplicate" in err_msg or "unique" in err_msg:
+            raise HTTPException(status_code=400, detail="An account with this email already exists.")
+        raise HTTPException(status_code=500, detail="Database registration failed. Please try again.")
+
+@app.post("/api/auth/login")
+def login_user(req: UserLoginRequest, db: Session = Depends(get_db)):
+    """
+    Authenticates user credentials against MySQL.
+    """
+    email = req.email.strip().lower() if req.email else ""
+    if not email or not req.password:
+        raise HTTPException(status_code=400, detail="Email and password are required.")
+
+    user = crud.authenticate_user(db, email, req.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials. Please check your email and password."
+        )
+
+    token = generate_session_token(user.id, user.email)
+    return {
+        "status": "success",
+        "message": "Login successful!",
+        "token": token,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
+        }
+    }
+
+# ==========================================
 # USERS (CRUD in MySQL)
 # ==========================================
 
 @app.post("/api/users", status_code=status.HTTP_201_CREATED)
 def create_user(user_data: Dict[str, Any], db: Session = Depends(get_db)):
     """INSERT user profile into MySQL."""
+    email = user_data.get("email", "").strip().lower()
+    if email:
+        existing = crud.get_user_by_email(db, email)
+        if existing:
+            raise HTTPException(status_code=400, detail="An account with this email already exists.")
     try:
         user = crud.create_user(db, user_data)
         return {"id": user.id, "email": user.email, "name": user.name, "role": user.role}
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error creating user: {str(e)}")
+        err_msg = str(e).lower()
+        if "duplicate" in err_msg or "unique" in err_msg:
+            raise HTTPException(status_code=400, detail="An account with this email already exists.")
+        raise HTTPException(status_code=500, detail="Database error creating user.")
 
 @app.get("/api/users/{user_id}")
 def get_user(user_id: str, db: Session = Depends(get_db)):

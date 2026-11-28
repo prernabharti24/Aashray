@@ -137,6 +137,7 @@ class UserModel(Base):
     email = Column(String(150), unique=True, nullable=False, index=True)
     name = Column(String(100), nullable=False)
     role = Column(String(50), default="architect")
+    password_hash = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
 

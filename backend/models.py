@@ -145,3 +145,31 @@ class FloorPlanSaveRequest(BaseModel):
     ceiling_height_m: Optional[float] = None
 
 
+class UserRegisterRequest(BaseModel):
+    fullName: str
+    email: str
+    password: str
+    confirmPassword: Optional[str] = None
+    role: Optional[str] = "architect"
+
+
+class UserLoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    role: str
+
+
+class UserAuthResponse(BaseModel):
+    status: str = "success"
+    message: str
+    token: str
+    user: UserResponse
+
+
+
